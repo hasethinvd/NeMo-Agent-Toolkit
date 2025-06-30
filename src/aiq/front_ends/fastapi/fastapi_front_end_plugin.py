@@ -63,13 +63,51 @@ class FastApiFrontEndPlugin(FrontEndBase[FastApiFrontEndConfig]):
 
                 reload_excludes = ["./.*"]
 
-                uvicorn.run("aiq.front_ends.fastapi.main:get_app",
-                            host=self.front_end_config.host,
-                            port=self.front_end_config.port,
-                            workers=self.front_end_config.workers,
-                            reload=self.front_end_config.reload,
-                            factory=True,
-                            reload_excludes=reload_excludes)
+                # Build uvicorn configuration
+                uvicorn_kwargs = {
+                    "app": "aiq.front_ends.fastapi.main:get_app",
+                    "host": self.front_end_config.host,
+                    "port": self.front_end_config.port,
+                    "workers": self.front_end_config.workers,
+                    "reload": self.front_end_config.reload,
+                    "factory": True,
+                    "reload_excludes": reload_excludes
+                }
+
+                # Add SSL configuration if available
+                ssl_cert_file = getattr(self.front_end_config, 'ssl_cert_file', None)
+                ssl_key_file = getattr(self.front_end_config, 'ssl_key_file', None)
+                ssl_ca_file = getattr(self.front_end_config, 'ssl_ca_file', None)
+                ssl_auto_generate = getattr(self.front_end_config, 'ssl_auto_generate', False)
+
+                if ssl_cert_file and ssl_key_file:
+                    # Auto-generate certificates if requested
+                    if ssl_auto_generate:
+                        try:
+                            from aiq_tpm_assistant.ssl_manager import SSLCertificateManager
+                            ssl_manager = SSLCertificateManager()
+                            ssl_manager.ensure_certificates_exist()
+                            print("✅ SSL certificates auto-generated")
+                        except ImportError:
+                            print("ℹ️  SSL auto-generation requires aiq_tpm_assistant.ssl_manager")
+                        except Exception as e:
+                            print(f"⚠️  SSL certificate generation failed: {e}")
+                    
+                    # Add SSL to uvicorn if certificates exist
+                    if os.path.exists(ssl_cert_file) and os.path.exists(ssl_key_file):
+                        uvicorn_kwargs.update({
+                            "ssl_certfile": ssl_cert_file,
+                            "ssl_keyfile": ssl_key_file,
+                        })
+                        if ssl_ca_file and os.path.exists(ssl_ca_file):
+                            uvicorn_kwargs["ssl_ca_certs"] = ssl_ca_file
+                        
+                        protocol = "HTTPS"
+                        print(f"🔒 SSL enabled - Server will run on {protocol}://{self.front_end_config.host}:{self.front_end_config.port}")
+                    else:
+                        print(f"⚠️  SSL configured but certificate files not found")
+
+                uvicorn.run(**uvicorn_kwargs)
 
             else:
                 app = get_app()

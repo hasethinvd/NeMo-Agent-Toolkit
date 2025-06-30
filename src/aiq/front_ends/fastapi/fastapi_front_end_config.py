@@ -212,3 +212,21 @@ class FastApiFrontEndConfig(FrontEndBaseConfig, name="fastapi"):
                      "Each runner is responsible for loading and running the AIQ Toolkit workflow. "
                      "Note: This is different from the worker class used by Gunicorn."),
     )
+
+    # SSL Configuration (optional)
+    ssl_cert_file: str | None = Field(
+        default=None,
+        description="Path to SSL certificate file for HTTPS support"
+    )
+    ssl_key_file: str | None = Field(
+        default=None,
+        description="Path to SSL private key file for HTTPS support"
+    )
+    ssl_ca_file: str | None = Field(
+        default=None,
+        description="Path to SSL CA certificate file for HTTPS support"
+    )
+    ssl_auto_generate: bool = Field(
+        default=False,
+        description="Automatically generate SSL certificates if they don't exist"
+    )

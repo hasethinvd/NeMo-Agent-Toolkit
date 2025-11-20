@@ -169,7 +169,7 @@ docs = [
 
 
 [project.entry-points.'aiq.components']
-aiq_agents = "aiq.agent.register"
+# aiq_agents = "aiq.agent.register"  # Disabled - not needed for tpm_assistant
 aiq_embedders = "aiq.embedder.register"
 aiq_llms = "aiq.llm.register"
 aiq_retrievers = "aiq.retriever.register"
